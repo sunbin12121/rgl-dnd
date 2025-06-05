@@ -71,7 +71,6 @@ export interface LayoutProps extends Omit<DroppableProps, 'onDrop' | 'ref'> {
   allowOutBoundedDrop?: boolean;
   isResetLayout?: boolean;
   scrollbarContainer?: HTMLElement | (() => HTMLElement);
-  enableSnapLine?: boolean;
   onLayoutChange?: (layouts: LayoutItem[], isUserAction: boolean, isLayoutChange?: boolean) => void;
   onDragStart?: (layoutItem: LayoutItem) => void;
   onDragOver?: (layoutItem: LayoutItem) => void;
@@ -120,13 +119,9 @@ export type ItemProps = Omit<
     isDragging?: boolean;
     leftSpacing?: number;
     resizeHandles?: ResizeHandle[];
-    onResizeStart?: (
-      data: LayoutItem,
-      direction: string,
-      setResizing: (size: Size) => void
-    ) => void;
+    onResizeStart?: (data: LayoutItem) => void;
     onResize?: (data: LayoutItem, w: number, h: number, direction: string) => void;
-    onResizeStop?: (data: LayoutItem, direction: string) => void;
+    onResizeStop?: (data: LayoutItem) => void;
     onMount?: (data: LayoutItem, item: HTMLDivElement) => void;
     onUnmount?: (data: LayoutItem, item: HTMLDivElement) => void;
   };

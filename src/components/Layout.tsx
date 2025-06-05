@@ -14,7 +14,7 @@ import {
   DEFAULT_ROWHEIGHT,
   prefixCls,
 } from '../constants';
-import { DragItem, InternalEventType, LayoutItem, LayoutProps, Size } from '../types';
+import { DragItem, InternalEventType, LayoutItem, LayoutProps } from '../types';
 import {
   calcH,
   calcLayoutByProps,
@@ -39,7 +39,6 @@ import Engine from './Engine';
 import Item from './Item';
 import { layoutContext, layoutStore } from './LayoutContext';
 import Placeholder, { PlaceholderRef } from './Placeholder';
-import ResizeSnapLine, { ResizeSnapLineRef } from './ResizeSnapLine';
 import event from './event';
 import './styles/layout.less';
 
@@ -83,8 +82,6 @@ class Layout extends React.PureComponent<LayoutProps, LayoutStates> {
   engine: Engine = new Engine();
 
   placeholderRef: React.RefObject<PlaceholderRef> = React.createRef();
-
-  snaplineRef: React.RefObject<ResizeSnapLineRef> = React.createRef();
 
   layouts: LayoutItem[];
 
@@ -151,15 +148,11 @@ class Layout extends React.PureComponent<LayoutProps, LayoutStates> {
   }
 
   componentDidMount() {
-    const { enableSnapLine = true } = this.props;
-
     this.scrollbar = this.getScrollbarContainer();
 
     this.engine.init(this.containerRef.current!, {
       getPositionParams: this.getPositionParams,
       scrollContainer: this.scrollbar,
-      enableSnapLine,
-      snaplineRef: this.snaplineRef,
     });
 
     if (this.props.nested) {
@@ -539,18 +532,6 @@ class Layout extends React.PureComponent<LayoutProps, LayoutStates> {
     this.props.onDrop?.(layouts, layoutItem, { item: dragItem, type: itemType }, this.group);
   };
 
-  onResizeStart = (
-    resizeItem: LayoutItem,
-    direction: string,
-    setResizing: (size: Size) => void
-  ) => {
-    if (['n', 's'].includes(direction) && this.engine.snapline) {
-      this.engine.snapline.resizeStart(resizeItem, this.layouts, setResizing);
-    }
-
-    this.onDragStart(resizeItem);
-  };
-
   onDragStart = (dragItem: DragItem) => {
     const { layouts } = this;
     const layoutItem = getLayoutItem(layouts, dragItem.i);
@@ -654,7 +635,7 @@ class Layout extends React.PureComponent<LayoutProps, LayoutStates> {
 
   onResize = (item: LayoutItem, w: number, h: number, direction: string) => {
     const { layouts } = this;
-    const { cols, compactType, preventCollision, rowHeight, margin } = this.props;
+    const { cols, compactType, preventCollision } = this.props;
     const [newLayouts, l] = withLayoutItem(layouts, item.i, (l) => {
       // Something like quad tree should be used
       // to find collisions faster
@@ -696,13 +677,6 @@ class Layout extends React.PureComponent<LayoutProps, LayoutStates> {
       return;
     }
 
-    if (['n', 's'].includes(direction) && this.engine.snapline) {
-      this.engine.snapline.reize(
-        { w, h },
-        { positionParams: this.getPositionParams(), onResize: this.onResize }
-      );
-    }
-
     // Re-compact the newLayout and set the drag placeholder.
     this.handleLayoutsChange(compact(newLayouts, compactType, cols), {
       isDragging: false,
@@ -719,7 +693,7 @@ class Layout extends React.PureComponent<LayoutProps, LayoutStates> {
     });
   };
 
-  onResizeStop = (item: LayoutItem, direction: string) => {
+  onResizeStop = (item: LayoutItem) => {
     const { layouts } = this;
     const { cols, compactType, onResizeStop } = this.props;
     withLayoutItem(layouts, item.i, (l) => {
@@ -735,11 +709,6 @@ class Layout extends React.PureComponent<LayoutProps, LayoutStates> {
     }
 
     this.placeholderRef.current.updatePlaceholder(null);
-
-    if (['n', 's'].includes(direction) && this.engine.snapline) {
-      this.engine.snapline.resizeStop();
-    }
-
     this.onLayoutMaybeChanged(newLayouts, this.oldLayouts);
     onResizeStop?.(item, newLayouts);
   };
@@ -814,7 +783,7 @@ class Layout extends React.PureComponent<LayoutProps, LayoutStates> {
           resizeHandles={resizeHandles}
           onDragEnd={this.onDragEnd}
           onDragStart={this.onDragStart}
-          onResizeStart={this.onResizeStart}
+          onResizeStart={this.onDragStart}
           onResize={this.onResize}
           onResizeStop={this.onResizeStop}
           onMount={this.onItemMount}
@@ -869,7 +838,6 @@ class Layout extends React.PureComponent<LayoutProps, LayoutStates> {
       >
         <div ref={this.containerRef} className={clsNameStr} style={containerStyle}>
           <Placeholder ref={this.placeholderRef} />
-          <ResizeSnapLine ref={this.snaplineRef} />
           {this.renderItems()}
         </div>
       </Droppable>
